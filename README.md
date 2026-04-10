@@ -78,19 +78,19 @@ The agent wallet signs trades on behalf of your main wallet. It cannot withdraw 
 
 ```
 src/java/
-  Main.java                  # Entry point, trading loop, API server
+  Main.java                     # Entry point, trading loop, API server
   config/
-    ConfigLoader.java         # Environment config with defaults
+    ConfigLoader.java           # Environment config with defaults
   risk/
-    RiskManager.java          # Safety guards (position limits, loss protection)
+    RiskManager.java            # Safety guards (position limits, loss protection)
   agent/
-    TradingAgent.java      # Claude API integration, tool calling
+    TradingAgent.java           # Claude API integration, tool calling
   indicators/
-    LocalIndicators.java    # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
+    LocalIndicators.java        # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
   trading/
-    HyperliquidApi.java     # Order execution, candles, state queries
+    HyperliquidApi.java         # Order execution, candles, state queries
   utils/
-    Formatting.java          # Number formatting, JSON serialization helpers
+    Formatting.java             # Number formatting, JSON serialization helpers
 ```
 
 ## How It Works
