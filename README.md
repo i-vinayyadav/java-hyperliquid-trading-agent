@@ -37,7 +37,7 @@ All enforced in code, not just LLM prompts. Configurable via `.env`:
 ## Setup
 
 ### Prerequisites
-- Python 3.12+
+- Java + Spring-Boot
 - Anthropic API key
 - Hyperliquid wallet (agent wallet as signer + main wallet with funds)
 
@@ -58,13 +58,12 @@ Required environment variables:
 ### Install & Run
 
 ```bash
-pip install hyperliquid-python-sdk anthropic python-dotenv aiohttp requests
-python3 src/main.py
+mvn spring-boot:run
 ```
 
 Or with CLI args:
 ```bash
-python3 src/main.py --assets "BTC ETH SOL xyz:GOLD xyz:TSLA" --interval 5m
+java -jar trading-agent --assets "BTC ETH SOL xyz:GOLD xyz:TSLA" --interval 5m
 ```
 
 ### Agent Wallet Setup
@@ -78,20 +77,20 @@ The agent wallet signs trades on behalf of your main wallet. It cannot withdraw 
 ## Structure
 
 ```
-src/
-  main.py                  # Entry point, trading loop, API server
-  config_loader.py         # Environment config with defaults
-  risk_manager.py          # Safety guards (position limits, loss protection)
+src/java/
+  Main.java                  # Entry point, trading loop, API server
+  config/
+    ConfigLoader.java         # Environment config with defaults
+  risk/
+    RiskManager.java          # Safety guards (position limits, loss protection)
   agent/
-    decision_maker.py      # Claude API integration, tool calling
+    TradingAgent.java      # Claude API integration, tool calling
   indicators/
-    local_indicators.py    # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
-    taapi_client.py        # Legacy (unused) — kept for reference
+    LocalIndicators.java    # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
   trading/
-    hyperliquid_api.py     # Order execution, candles, state queries
+    HyperliquidApi.java     # Order execution, candles, state queries
   utils/
-    formatting.py          # Number formatting
-    prompt_utils.py        # JSON serialization helpers
+    Formatting.java          # Number formatting, JSON serialization helpers
 ```
 
 ## How It Works
