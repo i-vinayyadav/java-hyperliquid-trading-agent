@@ -63,7 +63,7 @@ mvn spring-boot:run
 
 Or with CLI args:
 ```bash
-java -jar trading-agent --assets "BTC ETH SOL xyz:GOLD xyz:TSLA" --interval 5m
+java -jar trading-agent.jar --assets "BTC ETH SOL xyz:GOLD xyz:TSLA" --interval 5m
 ```
 
 ### Agent Wallet Setup
