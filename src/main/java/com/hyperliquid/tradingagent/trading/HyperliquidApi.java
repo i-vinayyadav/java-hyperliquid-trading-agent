@@ -36,8 +36,7 @@ public class HyperliquidApi {
     private List<Map<String, Object>> metaCache = null;
     private Map<String, List<Object>> hip3MetaCache = new HashMap<>();
 
-    public HyperliquidApi() {
-        Map<String, Object> config = com.hyperliquid.tradingagent.config.ConfigLoader.CONFIG;
+    public HyperliquidApi(Map<String, Object> config) {
         String privateKey = (String) config.get("hyperliquidPrivateKey");
         String mnemonic = (String) config.get("mnemonic");
         if (privateKey != null) {

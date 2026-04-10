@@ -1,13 +1,14 @@
 package com.hyperliquid.tradingagent.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hyperliquid.tradingagent.trading.HyperliquidApi;
+import com.hyperliquid.tradingagent.trading.CoinDCXApi;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Decision-making agent that orchestrates LLM prompts and indicator lookups.
@@ -15,16 +16,18 @@ import java.util.*;
 public class TradingAgent {
     private static final Logger logger = LoggerFactory.getLogger(TradingAgent.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final OkHttpClient httpClient = new OkHttpClient();
+    private static final OkHttpClient httpClient = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
 
     private final String model;
     private final String apiKey;
     private final int maxTokens;
 
-    public TradingAgent(HyperliquidApi hyperliquid) {
-        Map<String, Object> config = com.hyperliquid.tradingagent.config.ConfigLoader.CONFIG;
+    public TradingAgent(CoinDCXApi hyperliquid, Map<String, Object> config) {
         this.model = (String) config.get("llmModel");
-        this.apiKey = (String) config.get("anthropicApiKey");
+        this.apiKey = (String) config.get("googleApiKey");
         this.maxTokens = (Integer) config.get("maxTokens");
     }
 
@@ -39,7 +42,7 @@ public class TradingAgent {
 
         // For simplicity, make a single call without tool loop
         try {
-            Map<String, Object> response = callClaude(messages, systemPrompt, tools, false);
+            Map<String, Object> response = callGemini(messages, systemPrompt, tools, false);
             return parseResponse(response, assets);
         } catch (Exception e) {
             logger.error("Agent error", e);
@@ -120,22 +123,22 @@ public class TradingAgent {
         ));
     }
 
-    private Map<String, Object> callClaude(List<Map<String, Object>> messages, String systemPrompt, List<Map<String, Object>> tools, boolean useTools) throws IOException {
+    private Map<String, Object> callGemini(List<Map<String, Object>> messages, String systemPrompt, List<Map<String, Object>> tools, boolean useTools) throws IOException {
+        String fullPrompt = systemPrompt + "\n\n" + (String) messages.get(0).get("content");
         Map<String, Object> payload = new HashMap<>();
-        payload.put("model", model);
-        payload.put("max_tokens", maxTokens);
-        payload.put("system", systemPrompt);
-        payload.put("messages", messages);
+        payload.put("contents", List.of(Map.of("parts", List.of(Map.of("text", fullPrompt)))));
+        payload.put("generationConfig", Map.of("maxOutputTokens", maxTokens));
         if (useTools) {
+            // Convert to Gemini tools format if needed
             payload.put("tools", tools);
         }
 
         String json = objectMapper.writeValueAsString(payload);
         RequestBody body = RequestBody.create(json, MediaType.get("application/json"));
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
         Request request = new Request.Builder()
-                .url("https://api.anthropic.com/v1/messages")
-                .addHeader("x-api-key", apiKey)
-                .addHeader("anthropic-version", "2023-06-01")
+                .url(url)
+                .addHeader("X-goog-api-key", apiKey)
                 .post(body)
                 .build();
 
@@ -144,23 +147,29 @@ public class TradingAgent {
                 throw new IOException("HTTP error: " + response.code());
             }
             String responseBody = response.body().string();
+            logger.info("Gemini API Response Body: " + responseBody);
             return objectMapper.readValue(responseBody, Map.class);
         }
     }
 
     private Map<String, Object> parseResponse(Map<String, Object> response, List<String> assets) {
-        // Simplified parsing
-        List<Map<String, Object>> content = (List<Map<String, Object>>) response.get("content");
-        for (Map<String, Object> block : content) {
-            if ("text".equals(block.get("type"))) {
-                String text = (String) block.get("text");
-                try {
-                    Map<String, Object> parsed = objectMapper.readValue(text, Map.class);
-                    if (parsed.containsKey("trade_decisions")) {
-                        return parsed;
+        // Gemini response parsing
+        List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+        if (candidates != null && !candidates.isEmpty()) {
+            Map<String, Object> candidate = candidates.get(0);
+            Map<String, Object> content = (Map<String, Object>) candidate.get("content");
+            if (content != null) {
+                List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
+                if (parts != null && !parts.isEmpty()) {
+                    String text = (String) parts.get(0).get("text");
+                    try {
+                        Map<String, Object> parsed = objectMapper.readValue(text, Map.class);
+                        if (parsed.containsKey("trade_decisions")) {
+                            return parsed;
+                        }
+                    } catch (Exception e) {
+                        // Sanitize if needed
                     }
-                } catch (Exception e) {
-                    // Sanitize if needed
                 }
             }
         }

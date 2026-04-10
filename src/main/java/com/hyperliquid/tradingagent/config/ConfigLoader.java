@@ -1,148 +1,157 @@
 package com.hyperliquid.tradingagent.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.cdimascio.dotenv.Dotenv;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 
-import java.util.*;
+import java.util.Map;
 
 /**
- * Centralized environment variable loading for the trading agent configuration.
+ * Centralized configuration loading using Spring @Value annotations.
  */
+@Configuration
 public class ConfigLoader {
-    private static final Logger logger = LoggerFactory.getLogger(ConfigLoader.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    static {
-        try {
-            Dotenv.load();
-        } catch (Exception e) {
-            // .env file not found - continue with system environment variables
-            logger.debug("Could not load .env file, continuing with system environment variables");
-        }
+    // Hyperliquid
+    @Value("${HYPERLIQUID_PRIVATE_KEY:#{null}}")
+    private String hyperliquidPrivateKey;
+
+    @Value("${MNEMONIC:#{null}}")
+    private String mnemonic;
+
+    @Value("${HYPERLIQUID_BASE_URL:#{null}}")
+    private String hyperliquidBaseUrl;
+
+    @Value("${HYPERLIQUID_NETWORK:mainnet}")
+    private String hyperliquidNetwork;
+
+    @Value("${HYPERLIQUID_VAULT_ADDRESS:#{null}}")
+    private String hyperliquidVaultAddress;
+
+    // LLM — Google Gemini API
+    @Value("${GOOGLE_API_KEY:#{null}}")
+    private String googleApiKey;
+
+    @Value("${LLM_MODEL:gemini-flash-latest}")
+    private String llmModel;
+
+    @Value("${SANITIZE_MODEL:gemini-flash-latest}")
+    private String sanitizeModel;
+
+    @Value("${MAX_TOKENS:4096}")
+    private int maxTokens;
+
+    @Value("${ENABLE_TOOL_CALLING:false}")
+    private boolean enableToolCalling;
+
+    // Extended thinking
+    @Value("${THINKING_ENABLED:false}")
+    private boolean thinkingEnabled;
+
+    @Value("${THINKING_BUDGET_TOKENS:10000}")
+    private int thinkingBudgetTokens;
+
+    // Runtime controls
+    @Value("${ASSETS:#{null}}")
+    private String assets;
+
+    @Value("${INTERVAL:#{null}}")
+    private String interval;
+
+    // Risk management
+    @Value("${MAX_POSITION_PCT:20}")
+    private String maxPositionPct;
+
+    @Value("${MAX_LOSS_PER_POSITION_PCT:20}")
+    private String maxLossPerPositionPct;
+
+    @Value("${MAX_LEVERAGE:10}")
+    private String maxLeverage;
+
+    @Value("${MAX_TOTAL_EXPOSURE_PCT:80}")
+    private String maxTotalExposurePct;
+
+    @Value("${DAILY_LOSS_CIRCUIT_BREAKER_PCT:25}")
+    private String dailyLossCircuitBreakerPct;
+
+    @Value("${MANDATORY_SL_PCT:5}")
+    private String mandatorySlPct;
+
+    @Value("${MAX_CONCURRENT_POSITIONS:10}")
+    private String maxConcurrentPositions;
+
+    @Value("${MIN_BALANCE_RESERVE_PCT:10}")
+    private String minBalanceReservePct;
+
+    // API server
+    @Value("${API_HOST:0.0.0.0}")
+    private String apiHost;
+
+    @Value("${APP_PORT:3000}")
+    private String apiPort;
+
+    // Legacy / optional
+    @Value("${TAAPI_API_KEY:#{null}}")
+    private String taapiApiKey;
+
+    @Value("${OPENROUTER_API_KEY:#{null}}")
+    private String openrouterApiKey;
+
+    // CoinDCX
+    @Value("${COINDCX_API_KEY:#{null}}")
+    private String coindcxApiKey;
+
+    @Value("${COINDCX_API_SECRET:#{null}}")
+    private String coindcxApiSecret;
+
+    @Value("${COINDCX_BASE_URL:#{null}}")
+    private String coindcxBaseUrl;
+
+    public Map<String, Object> getConfig() {
+        return Map.ofEntries(
+                // Hyperliquid
+                Map.entry("hyperliquidPrivateKey", hyperliquidPrivateKey),
+                Map.entry("mnemonic", mnemonic),
+                Map.entry("hyperliquidBaseUrl", hyperliquidBaseUrl),
+                Map.entry("hyperliquidNetwork", hyperliquidNetwork),
+                Map.entry("hyperliquidVaultAddress", hyperliquidVaultAddress),
+
+                // LLM — Google Gemini API (primary)
+                Map.entry("googleApiKey", googleApiKey),
+                Map.entry("llmModel", llmModel),
+                Map.entry("sanitizeModel", sanitizeModel),
+                Map.entry("maxTokens", maxTokens),
+                Map.entry("enableToolCalling", enableToolCalling),
+
+                // Extended thinking (Claude)
+                Map.entry("thinkingEnabled", thinkingEnabled),
+                Map.entry("thinkingBudgetTokens", thinkingBudgetTokens),
+
+                // Runtime controls
+                Map.entry("assets", assets),
+                Map.entry("interval", interval),
+
+                // Risk management
+                Map.entry("maxPositionPct", maxPositionPct),
+                Map.entry("maxLossPerPositionPct", maxLossPerPositionPct),
+                Map.entry("maxLeverage", maxLeverage),
+                Map.entry("maxTotalExposurePct", maxTotalExposurePct),
+                Map.entry("dailyLossCircuitBreakerPct", dailyLossCircuitBreakerPct),
+                Map.entry("mandatorySlPct", mandatorySlPct),
+                Map.entry("maxConcurrentPositions", maxConcurrentPositions),
+                Map.entry("minBalanceReservePct", minBalanceReservePct),
+
+                // API server
+                Map.entry("apiHost", apiHost),
+                Map.entry("apiPort", apiPort),
+
+                // Legacy / optional
+                Map.entry("taapiApiKey", taapiApiKey),
+                Map.entry("openrouterApiKey", openrouterApiKey),
+
+                // CoinDCX
+                Map.entry("coindcxApiKey", coindcxApiKey),
+                Map.entry("coindcxApiSecret", coindcxApiSecret),
+                Map.entry("coindcxBaseUrl", coindcxBaseUrl)
+        );
     }
-
-    private static String getEnv(String name) {
-        return getEnv(name, null, false);
-    }
-
-    private static String getEnv(String name, String defaultValue) {
-        return getEnv(name, defaultValue, false);
-    }
-
-    private static String getEnv(String name, String defaultValue, boolean required) {
-        String value = System.getenv(name);
-        if (required && (value == null || value.trim().isEmpty())) {
-            throw new RuntimeException("Missing required environment variable: " + name);
-        }
-        return value != null ? value : defaultValue;
-    }
-
-    private static boolean getBool(String name, boolean defaultValue) {
-        String raw = System.getenv(name);
-        if (raw == null) {
-            return defaultValue;
-        }
-        return raw.trim().toLowerCase().matches("1|true|yes|on");
-    }
-
-    private static Integer getInt(String name, Integer defaultValue) {
-        String raw = System.getenv(name);
-        if (raw == null || raw.trim().isEmpty()) {
-            return defaultValue;
-        }
-        try {
-            return Integer.parseInt(raw.trim());
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Invalid integer for " + name + ": " + raw, e);
-        }
-    }
-
-    private static Map<String, Object> getJson(String name, Map<String, Object> defaultValue) {
-        String raw = System.getenv(name);
-        if (raw == null || raw.trim().isEmpty()) {
-            return defaultValue;
-        }
-        try {
-            return objectMapper.readValue(raw, Map.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Invalid JSON for " + name + ": " + raw, e);
-        }
-    }
-
-    private static List<String> getList(String name, List<String> defaultValue) {
-        String raw = System.getenv(name);
-        if (raw == null || raw.trim().isEmpty()) {
-            return defaultValue;
-        }
-        raw = raw.trim();
-        // Support JSON-style lists
-        if (raw.startsWith("[") && raw.endsWith("]")) {
-            try {
-                List<?> parsed = objectMapper.readValue(raw, List.class);
-                List<String> result = new ArrayList<>();
-                for (Object item : parsed) {
-                    if (item != null) {
-                        result.add(item.toString().trim().replaceAll("^\"|\"$", ""));
-                    }
-                }
-                return result;
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Invalid JSON list for " + name + ": " + raw, e);
-            }
-        }
-        // Fallback: comma separated string
-        List<String> values = new ArrayList<>();
-        for (String item : raw.split(",")) {
-            String cleaned = item.trim().replaceAll("^\"|\"$", "");
-            if (!cleaned.isEmpty()) {
-                values.add(cleaned);
-            }
-        }
-        return values.isEmpty() ? defaultValue : values;
-    }
-
-    public static final Map<String, Object> CONFIG = Map.ofEntries(
-            // Hyperliquid
-            Map.entry("hyperliquidPrivateKey", getEnv("HYPERLIQUID_PRIVATE_KEY")),
-            Map.entry("mnemonic", getEnv("MNEMONIC")),
-            Map.entry("hyperliquidBaseUrl", getEnv("HYPERLIQUID_BASE_URL")),
-            Map.entry("hyperliquidNetwork", getEnv("HYPERLIQUID_NETWORK", "mainnet")),
-            Map.entry("hyperliquidVaultAddress", getEnv("HYPERLIQUID_VAULT_ADDRESS")),
-
-            // LLM — Anthropic Claude API (primary)
-            Map.entry("anthropicApiKey", getEnv("ANTHROPIC_API_KEY", null, true)),
-            Map.entry("llmModel", getEnv("LLM_MODEL", "claude-sonnet-4-20250514")),
-            Map.entry("sanitizeModel", getEnv("SANITIZE_MODEL", "claude-haiku-4-5-20251001")),
-            Map.entry("maxTokens", getInt("MAX_TOKENS", 4096)),
-            Map.entry("enableToolCalling", getBool("ENABLE_TOOL_CALLING", false)),
-
-            // Extended thinking (Claude)
-            Map.entry("thinkingEnabled", getBool("THINKING_ENABLED", false)),
-            Map.entry("thinkingBudgetTokens", getInt("THINKING_BUDGET_TOKENS", 10000)),
-
-            // Runtime controls
-            Map.entry("assets", getEnv("ASSETS")),
-            Map.entry("interval", getEnv("INTERVAL")),
-
-            // Risk management
-            Map.entry("maxPositionPct", getEnv("MAX_POSITION_PCT", "20")),
-            Map.entry("maxLossPerPositionPct", getEnv("MAX_LOSS_PER_POSITION_PCT", "20")),
-            Map.entry("maxLeverage", getEnv("MAX_LEVERAGE", "10")),
-            Map.entry("maxTotalExposurePct", getEnv("MAX_TOTAL_EXPOSURE_PCT", "80")),
-            Map.entry("dailyLossCircuitBreakerPct", getEnv("DAILY_LOSS_CIRCUIT_BREAKER_PCT", "25")),
-            Map.entry("mandatorySlPct", getEnv("MANDATORY_SL_PCT", "5")),
-            Map.entry("maxConcurrentPositions", getEnv("MAX_CONCURRENT_POSITIONS", "10")),
-            Map.entry("minBalanceReservePct", getEnv("MIN_BALANCE_RESERVE_PCT", "10")),
-
-            // API server
-            Map.entry("apiHost", getEnv("API_HOST", "0.0.0.0")),
-            Map.entry("apiPort", getEnv("APP_PORT") != null ? getEnv("APP_PORT") : getEnv("API_PORT", "3000")),
-
-            // Legacy / optional
-            Map.entry("taapiApiKey", getEnv("TAAPI_API_KEY")),
-            Map.entry("openrouterApiKey", getEnv("OPENROUTER_API_KEY"))
-    );
 }

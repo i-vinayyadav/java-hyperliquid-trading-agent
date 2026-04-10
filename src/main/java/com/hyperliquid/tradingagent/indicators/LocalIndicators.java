@@ -433,12 +433,14 @@ public class LocalIndicators {
     }
 
     public static Double latest(List<Double> series) {
-        for (int i = series.size() - 1; i >= 0; i--) {
-            if (series.get(i) != null) {
-                return series.get(i);
+        if (series != null && !series.isEmpty()) {
+            for (int i = series.size() - 1; i >= 0; i--) {
+                if (series.get(i) != null) {
+                    return series.get(i);
+                }
             }
         }
-        return null;
+        return Double.valueOf("0");
     }
 
     private static double safeDouble(Object obj) {

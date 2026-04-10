@@ -30,8 +30,7 @@ public class RiskManager {
     private boolean circuitBreakerActive = false;
     private LocalDate circuitBreakerDate = null;
 
-    public RiskManager() {
-        Map<String, Object> config = com.hyperliquid.tradingagent.config.ConfigLoader.CONFIG;
+    public RiskManager(Map<String, Object> config) {
         this.maxPositionPct = Double.parseDouble((String) config.get("maxPositionPct"));
         this.maxLossPerPositionPct = Double.parseDouble((String) config.get("maxLossPerPositionPct"));
         this.maxLeverage = Double.parseDouble((String) config.get("maxLeverage"));

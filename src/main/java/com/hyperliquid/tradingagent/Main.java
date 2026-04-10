@@ -2,9 +2,11 @@ package com.hyperliquid.tradingagent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hyperliquid.tradingagent.agent.TradingAgent;
+import com.hyperliquid.tradingagent.config.ConfigLoader;
 import com.hyperliquid.tradingagent.indicators.LocalIndicators;
 import com.hyperliquid.tradingagent.risk.RiskManager;
 import com.hyperliquid.tradingagent.trading.HyperliquidApi;
+import com.hyperliquid.tradingagent.trading.CoinDCXApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -26,7 +28,7 @@ public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    private final HyperliquidApi hyperliquid;
+    private final CoinDCXApi coindcx;
     private final TradingAgent agent;
     private final RiskManager riskMgr;
 
@@ -38,14 +40,14 @@ public class Main {
     private List<String> assets;
     private String interval;
 
-    public Main() {
-        this.hyperliquid = new HyperliquidApi();
-        this.agent = new TradingAgent(hyperliquid);
-        this.riskMgr = new RiskManager();
+    public Main(ConfigLoader configLoader) {
+        Map<String, Object> config = configLoader.getConfig();
+        this.coindcx = new CoinDCXApi(config);
+        this.agent = new TradingAgent(coindcx, config);
+        this.riskMgr = new RiskManager(config);
         this.startTime = LocalDateTime.now(ZoneOffset.UTC);
         this.recentEvents = new LinkedList<>();
         // Load assets and interval from config
-        Map<String, Object> config = com.hyperliquid.tradingagent.config.ConfigLoader.CONFIG;
         String assetsStr = (String) config.get("assets");
         this.interval = (String) config.get("interval");
         if (assetsStr != null) {
@@ -70,7 +72,7 @@ public class Main {
         // Simplified loop
         try {
             // Gather data
-            Map<String, Object> state = hyperliquid.getUserState().join();
+            Map<String, Object> state = coindcx.getUserState().join();
             double totalValue = (Double) state.getOrDefault("total_value", 0.0);
             double accountValue = totalValue;
             List<Map<String, Object>> positions = (List<Map<String, Object>>) state.get("positions");
@@ -79,10 +81,10 @@ public class Main {
             List<Map<String, Object>> marketSections = new ArrayList<>();
             Map<String, Double> assetPrices = new HashMap<>();
             for (String asset : assets) {
-                double currentPrice = hyperliquid.getCurrentPrice(asset).join();
+                double currentPrice = (Double) coindcx.getCurrentPrice(asset).join();
                 assetPrices.put(asset, currentPrice);
-                List<Map<String, Object>> candles5m = hyperliquid.getCandles(asset, "5m", 100).join();
-                List<Map<String, Object>> candles4h = hyperliquid.getCandles(asset, "4h", 100).join();
+                List<Map<String, Object>> candles5m = coindcx.getCandles(asset, "5m", 100).join();
+                List<Map<String, Object>> candles4h = coindcx.getCandles(asset, "4h", 100).join();
 
                 Map<String, List<Double>> intra = LocalIndicators.computeAll(candles5m);
                 Map<String, List<Double>> lt = LocalIndicators.computeAll(candles4h);
@@ -122,10 +124,10 @@ public class Main {
                 double currentPrice = assetPrices.get(asset);
                 if ("buy".equals(action)) {
                     double alloc = (Double) output.get("allocation_usd");
-                    hyperliquid.placeBuyOrder(asset, alloc / currentPrice, 0.01).join();
+                    coindcx.placeBuyOrder(asset, alloc / currentPrice, 0.01).join();
                 } else if ("sell".equals(action)) {
                     double alloc = (Double) output.get("allocation_usd");
-                    hyperliquid.placeSellOrder(asset, alloc / currentPrice, 0.01).join();
+                    coindcx.placeSellOrder(asset, alloc / currentPrice, 0.01).join();
                 }
             }
 
