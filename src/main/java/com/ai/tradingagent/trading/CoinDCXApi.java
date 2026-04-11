@@ -112,7 +112,7 @@ public class CoinDCXApi {
         Map<String, Object> payload = Map.of(
                 "side", "buy",
                 "order_type", "limit_order",
-                "market", asset + "INR", // Assuming INR pair, adjust as needed
+                "market", asset + "_USDT", // Assuming INR pair, adjust as needed
                 "price_per_unit", 0.0, // Market order, but CoinDCX uses limit
                 "total_quantity", amount
         );

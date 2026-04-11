@@ -2,6 +2,11 @@ package com.ai.tradingagent.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ai.tradingagent.trading.CoinDCXApi;
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentConfig;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.GenerationConfig;
+import com.google.genai.types.ToolConfig;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +35,7 @@ public class TradingAgent {
         this.model = (String) config.get("llmModel");
         this.apiKey = (String) config.get("googleApiKey");
         this.maxTokens = (Integer) config.get("maxTokens");
-        this.enableToolCalling = (Boolean) config.get("enableTool");
+        this.enableToolCalling = (Boolean) config.get("enableToolCalling");
     }
 
     public Map<String, Object> decideTrade(List<String> assets, String context) {
@@ -119,10 +124,18 @@ public class TradingAgent {
                 "input_schema", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "indicator", Map.of("type", "string", "enum", List.of("ema", "sma", "rsi", "macd", "bbands", "atr", "adx", "obv", "vwap", "stoch_rsi", "all")),
-                                "asset", Map.of("type", "string", "description", "CoinDCX asset symbol, e.g. BTC, ETH, OIL, GOLD, SPX"),
-                                "interval", Map.of("type", "string", "enum", List.of("1m", "5m", "15m", "1h", "4h", "1d")),
-                                "period", Map.of("type", "integer", "description", "Indicator period (default varies by indicator)")
+                                "indicator", Map.of(
+                                        "type", "string",
+                                        "enum", List.of("ema", "sma", "rsi", "macd", "bbands", "atr", "adx", "obv", "vwap", "stoch_rsi", "all")),
+                                "asset", Map.of(
+                                        "type", "string",
+                                        "description", "CoinDCX asset symbol, e.g. BTC, ETH, OIL, GOLD, SPX"),
+                                "interval", Map.of(
+                                        "type", "string",
+                                        "enum", List.of("1m", "5m", "15m", "1h", "4h", "1d")),
+                                "period", Map.of(
+                                        "type", "integer",
+                                        "description", "Indicator period (default varies by indicator)")
                         ),
                         "required", List.of("indicator", "asset", "interval")
                 )
@@ -131,28 +144,20 @@ public class TradingAgent {
 
     private Map<String, Object> callGemini(List<Map<String, Object>> messages, String systemPrompt, List<Map<String, Object>> tools, boolean useTools) throws IOException {
         String fullPrompt = systemPrompt + "\n\n" + (String) messages.get(0).get("content");
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("contents", List.of(Map.of("parts", List.of(Map.of("text", fullPrompt)))));
-        payload.put("generationConfig", Map.of("maxOutputTokens", maxTokens));
-        if (useTools) {
-            // Convert to Gemini tools format if needed
-            payload.put("tools", tools);
-        }
 
-        String json = objectMapper.writeValueAsString(payload);
-        RequestBody body = RequestBody.create(json, MediaType.get("application/json"));
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
-        Request request = new Request.Builder()
-                .url(url)
-                .addHeader("X-goog-api-key", apiKey)
-                .post(body)
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("HTTP error: " + response.code());
+        try (Client client = Client.builder().apiKey(apiKey).build()) {
+            GenerateContentConfig config = null;
+            if (useTools) {
+                ToolConfig toolConfig = ToolConfig.fromJson(objectMapper.writeValueAsString(tools));
+                config = GenerateContentConfig.builder().toolConfig(toolConfig).maxOutputTokens(maxTokens).build();
+            } else {
+                config = GenerateContentConfig.builder().maxOutputTokens(maxTokens).build();
             }
-            String responseBody = response.body().string();
+            logger.info("Calling Gemini API with maxTokens: {}, prompt length: {}", maxTokens, fullPrompt.length());
+            GenerateContentResponse response = client.models.generateContent(model, fullPrompt, config);
+            String responseBody = response.text();
+            logger.info("Gemini API Response received - length: {}, maxTokens: {}", responseBody.length(), maxTokens);
+            System.out.println("Gemini API Response Body: " + responseBody);
             logger.info("Gemini API Response Body: " + responseBody);
             return objectMapper.readValue(responseBody, Map.class);
         }
@@ -160,25 +165,17 @@ public class TradingAgent {
 
     private Map<String, Object> parseResponse(Map<String, Object> response, List<String> assets) {
         // Gemini response parsing
-        List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-        if (candidates != null && !candidates.isEmpty()) {
-            Map<String, Object> candidate = candidates.get(0);
-            Map<String, Object> content = (Map<String, Object>) candidate.get("content");
-            if (content != null) {
-                List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-                if (parts != null && !parts.isEmpty()) {
-                    String text = (String) parts.get(0).get("text");
-                    try {
-                        Map<String, Object> parsed = objectMapper.readValue(text, Map.class);
-                        if (parsed.containsKey("trade_decisions")) {
-                            return parsed;
-                        }
-                    } catch (Exception e) {
-                        // Sanitize if needed
-                    }
-                }
+        // Try to parse the response as JSON directly
+        try {
+            // If response is already a Map with reasoning and trade_decisions, return it
+            if (response.containsKey("reasoning") && response.containsKey("trade_decisions")) {
+                return response;
             }
+        } catch (Exception e) {
+            logger.warn("Failed to parse Gemini response: {}", e.getMessage());
         }
+
+        // Fallback: return empty response
         return Map.of("reasoning", "", "trade_decisions", new ArrayList<>());
     }
 
