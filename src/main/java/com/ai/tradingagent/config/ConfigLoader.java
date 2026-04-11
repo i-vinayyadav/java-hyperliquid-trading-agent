@@ -1,4 +1,4 @@
-package com.hyperliquid.tradingagent.config;
+package com.ai.tradingagent.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

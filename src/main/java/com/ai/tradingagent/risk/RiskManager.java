@@ -1,4 +1,4 @@
-package com.hyperliquid.tradingagent.risk;
+package com.ai.tradingagent.risk;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

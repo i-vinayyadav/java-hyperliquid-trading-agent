@@ -1,7 +1,7 @@
-package com.hyperliquid.tradingagent.agent;
+package com.ai.tradingagent.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hyperliquid.tradingagent.trading.CoinDCXApi;
+import com.ai.tradingagent.trading.CoinDCXApi;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

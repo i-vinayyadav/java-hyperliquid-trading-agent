@@ -12,8 +12,8 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.hyperliquid</groupId>
-    <artifactId>trading-agent</artifactId>
+    <groupId>com.ai</groupId>
+    <artifactId>java-ai-trading-agent</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 

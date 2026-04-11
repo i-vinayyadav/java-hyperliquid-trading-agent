@@ -1,8 +1,7 @@
-package com.hyperliquid.tradingagent.trading;
+package com.ai.tradingagent.trading;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

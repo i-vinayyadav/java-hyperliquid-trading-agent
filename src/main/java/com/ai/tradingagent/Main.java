@@ -1,12 +1,11 @@
-package com.hyperliquid.tradingagent;
+package com.ai.tradingagent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hyperliquid.tradingagent.agent.TradingAgent;
-import com.hyperliquid.tradingagent.config.ConfigLoader;
-import com.hyperliquid.tradingagent.indicators.LocalIndicators;
-import com.hyperliquid.tradingagent.risk.RiskManager;
-import com.hyperliquid.tradingagent.trading.HyperliquidApi;
-import com.hyperliquid.tradingagent.trading.CoinDCXApi;
+import com.ai.tradingagent.agent.TradingAgent;
+import com.ai.tradingagent.config.ConfigLoader;
+import com.ai.tradingagent.indicators.LocalIndicators;
+import com.ai.tradingagent.risk.RiskManager;
+import com.ai.tradingagent.trading.CoinDCXApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -17,7 +16,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Entry-point script that wires together the trading agent, data feeds, and API.

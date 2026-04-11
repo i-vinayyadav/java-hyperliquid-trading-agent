@@ -1,4 +1,4 @@
-package com.hyperliquid.tradingagent.trading;
+package com.ai.tradingagent.trading;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
@@ -8,11 +8,6 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Bip44WalletUtils;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;

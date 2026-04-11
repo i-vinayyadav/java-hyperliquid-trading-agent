@@ -1,4 +1,4 @@
-package com.hyperliquid.tradingagent.utils;
+package com.ai.tradingagent.utils;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;

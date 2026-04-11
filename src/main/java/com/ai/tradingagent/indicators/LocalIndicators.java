@@ -1,4 +1,4 @@
-package com.hyperliquid.tradingagent.indicators;
+package com.ai.tradingagent.indicators;
 
 import java.util.*;
 
