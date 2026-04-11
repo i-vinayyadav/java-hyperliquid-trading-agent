@@ -1,17 +1,17 @@
-# Hyperliquid AI Trading Agent
+# AI Trading Agent
 
-An AI-powered trading agent that uses Claude to analyze markets and execute perpetual futures trades on Hyperliquid. Supports crypto, stocks, commodities, indices, and forex via HIP-3 markets.
+An AI-powered trading agent that uses Claude/Gemini to analyze markets and execute perpetual futures trades on Hyperliquid/CoinDCX. Supports crypto, stocks, commodities, indices, and forex via HIP-3 markets.
 
 ## What It Does
 
-1. Fetches real-time candle data and computes technical indicators (EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP) locally from Hyperliquid
-2. Sends full market context to Claude, which decides buy/sell/hold for each asset
+1. Fetches real-time candle data and computes technical indicators (EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP) locally from Hyperliquid/CoinDCX
+2. Sends full market context to Claude/Gemini, which decides buy/sell/hold for each asset
 3. Executes trades with take-profit and stop-loss orders
 4. Hard-coded safety guards enforce position limits, leverage caps, and loss protection
 
 ## Tradeable Markets
 
-All 229+ Hyperliquid perp markets plus HIP-3 tradfi assets:
+All 229+ Hyperliquid and CoinDCX perp markets plus HIP-3 tradfi assets:
 
 - **Crypto**: BTC, ETH, SOL, HYPE, AVAX, SUI, ARB, LINK, and 200+ more
 - **Stocks**: xyz:TSLA, xyz:NVDA, xyz:AAPL, xyz:GOOGL, xyz:AMZN, xyz:META, xyz:MSFT, xyz:COIN, xyz:PLTR...
@@ -38,20 +38,22 @@ All enforced in code, not just LLM prompts. Configurable via `.env`:
 
 ### Prerequisites
 - Java + Spring-Boot
-- Anthropic API key
-- Hyperliquid wallet (agent wallet as signer + main wallet with funds)
+- Anthropic/Gemini-AI-Studio API key
+- Hyperliquid/CoinDCX wallet (agent wallet as signer + main wallet with funds)
 
 ### Configuration
 
 ```bash
-cp application.properties application.properties
 # Edit application.properties with your keys
 ```
 
 Required environment variables:
 - `ANTHROPIC_API_KEY` — Claude API key
+- `GOOGLE_API_KEY` — Gemini API key
 - `HYPERLIQUID_PRIVATE_KEY` — Agent/API wallet private key (signer only)
 - `HYPERLIQUID_VAULT_ADDRESS` — Main wallet address (holds funds)
+- `COINDCX_API_KEY` — Agent/API wallet private key (signer only)
+- `COINDCX_API_SECRET` — Agent/API wallet secret key
 - `ASSETS` — Space-separated list of assets to trade
 - `INTERVAL` — Trading loop interval (e.g. `5m`, `1h`)
 
@@ -70,7 +72,7 @@ java -jar trading-agent.jar --assets "BTC ETH SOL xyz:GOLD xyz:TSLA" --interval 
 
 1. Go to app.hyperliquid.xyz → Settings → API Wallets
 2. Add your agent wallet address as an authorized signer
-3. Set `HYPERLIQUID_VAULT_ADDRESS` to your main wallet address in `.env`
+3. Set `HYPERLIQUID_VAULT_ADDRESS` to your main wallet address in `application.properties`
 
 The agent wallet signs trades on behalf of your main wallet. It cannot withdraw funds.
 
@@ -88,6 +90,7 @@ src/java/
   indicators/
     LocalIndicators.java        # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
   trading/
+    CoinDCXApi.java             # Order execution, candles, state queries
     HyperliquidApi.java         # Order execution, candles, state queries
   utils/
     Formatting.java             # Number formatting, JSON serialization helpers
