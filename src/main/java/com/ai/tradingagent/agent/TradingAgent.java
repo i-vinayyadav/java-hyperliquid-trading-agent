@@ -24,11 +24,13 @@ public class TradingAgent {
     private final String model;
     private final String apiKey;
     private final int maxTokens;
+    private final boolean enableToolCalling;
 
     public TradingAgent(CoinDCXApi hyperliquid, Map<String, Object> config) {
         this.model = (String) config.get("llmModel");
         this.apiKey = (String) config.get("googleApiKey");
         this.maxTokens = (Integer) config.get("maxTokens");
+        this.enableToolCalling = (Boolean) config.get("enableTool");
     }
 
     public Map<String, Object> decideTrade(List<String> assets, String context) {
@@ -42,7 +44,7 @@ public class TradingAgent {
 
         // For simplicity, make a single call without tool loop
         try {
-            Map<String, Object> response = callGemini(messages, systemPrompt, tools, false);
+            Map<String, Object> response = callGemini(messages, systemPrompt, tools, this.enableToolCalling);
             return parseResponse(response, assets);
         } catch (Exception e) {
             logger.error("Agent error", e);
@@ -109,14 +111,18 @@ public class TradingAgent {
     private List<Map<String, Object>> buildTools() {
         return List.of(Map.of(
                 "name", "fetch_indicator",
-                "description", "Fetch technical indicators...",
+                "description", "Fetch technical indicators computed locally from CoinDCX candle data. "+
+                                        "Works for ALL CoinDCX perp markets including crypto (BTC, ETH, SOL), "+
+                                        "commodities (OIL, GOLD, SILVER), indices (SPX), and more. "+
+                                        "Available indicators: ema, sma, rsi, macd, bbands, atr, adx, obv, vwap, stoch_rsi, all. "+
+                                        "Returns the latest values and recent series.",
                 "input_schema", Map.of(
                         "type", "object",
                         "properties", Map.of(
                                 "indicator", Map.of("type", "string", "enum", List.of("ema", "sma", "rsi", "macd", "bbands", "atr", "adx", "obv", "vwap", "stoch_rsi", "all")),
-                                "asset", Map.of("type", "string"),
+                                "asset", Map.of("type", "string", "description", "CoinDCX asset symbol, e.g. BTC, ETH, OIL, GOLD, SPX"),
                                 "interval", Map.of("type", "string", "enum", List.of("1m", "5m", "15m", "1h", "4h", "1d")),
-                                "period", Map.of("type", "integer")
+                                "period", Map.of("type", "integer", "description", "Indicator period (default varies by indicator)")
                         ),
                         "required", List.of("indicator", "asset", "interval")
                 )

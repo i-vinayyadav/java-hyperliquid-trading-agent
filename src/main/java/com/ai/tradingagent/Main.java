@@ -104,10 +104,19 @@ public class Main {
 
             // Context
             Map<String, Object> contextPayload = Map.of(
-                    "invocation", Map.of("minutes_since_start", minutesSinceStart, "invocation_count", invocationCount),
-                    "account", Map.of("total_return_pct", 0.0, "balance", state.get("balance"), "positions", positions),
+                    "invocation", Map.of(
+                            "minutes_since_start", minutesSinceStart,
+                            "current_time", System.currentTimeMillis(),
+                            "invocation_count", invocationCount),
+                    "account", Map.of(
+                            "total_return_pct", 0.0,
+                            "balance", state.get("balance"),
+                            "positions", positions),
+                    "risk_limits", riskMgr.getRiskSummary(),
                     "market_data", marketSections,
-                    "instructions", Map.of("assets", assets, "requirement", "Decide actions for all assets.")
+                    "instructions", Map.of(
+                            "assets", assets,
+                            "requirement", "Decide actions for all assets and return a strict JSON object matching the schema.")
             );
             String context = objectMapper.writeValueAsString(contextPayload);
 
