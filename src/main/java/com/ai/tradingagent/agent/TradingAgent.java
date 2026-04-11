@@ -157,7 +157,6 @@ public class TradingAgent {
             GenerateContentResponse response = client.models.generateContent(model, fullPrompt, config);
             String responseBody = response.text();
             logger.info("Gemini API Response received - length: {}, maxTokens: {}", responseBody.length(), maxTokens);
-            System.out.println("Gemini API Response Body: " + responseBody);
             logger.info("Gemini API Response Body: " + responseBody);
             return objectMapper.readValue(responseBody, Map.class);
         }

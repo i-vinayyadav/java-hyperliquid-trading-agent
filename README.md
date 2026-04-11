@@ -44,8 +44,8 @@ All enforced in code, not just LLM prompts. Configurable via `.env`:
 ### Configuration
 
 ```bash
-cp .env.example .env
-# Edit .env with your keys
+cp application.properties application.properties
+# Edit application.properties with your keys
 ```
 
 Required environment variables:
