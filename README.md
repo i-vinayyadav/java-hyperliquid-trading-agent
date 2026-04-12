@@ -65,7 +65,7 @@ mvn spring-boot:run
 
 Or with CLI args:
 ```bash
-java -jar trading-agent.jar --assets "BTC ETH SOL xyz:GOLD xyz:TSLA" --interval 5m
+java -jar ai-trading-agent.jar --assets "BTC ETH SOL xyz:GOLD xyz:TSLA" --interval 5m
 ```
 
 ### Agent Wallet Setup
@@ -80,15 +80,17 @@ The agent wallet signs trades on behalf of your main wallet. It cannot withdraw 
 
 ```
 src/java/
-  Main.java                     # Entry point, trading loop, API server
-  config/
-    ConfigLoader.java           # Environment config with defaults
-  risk/
-    RiskManager.java            # Safety guards (position limits, loss protection)
+  Main.java                     # Main Spring Boot Class
   agent/
     TradingAgent.java           # Claude API integration, tool calling
+  config/
+    ConfigLoader.java           # Environment config with defaults
   indicators/
     LocalIndicators.java        # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
+  risk/
+    RiskManager.java            # Safety guards (position limits, loss protection)
+  schedualr/
+    Schedular.java              # Entry point, trading loop, API server
   trading/
     CoinDCXApi.java             # Order execution, candles, state queries
     HyperliquidApi.java         # Order execution, candles, state queries
@@ -102,7 +104,7 @@ Each loop iteration:
 1. Fetches account state (balance, positions, PnL)
 2. Force-closes any position at >= 20% loss
 3. Gathers candle data and computes indicators for all assets
-4. Sends everything to Claude with risk limits
+4. Sends everything to Claude/Gemini with risk limits
 5. Claude returns buy/sell/hold decisions with allocation, TP/SL
 6. Risk manager validates each trade (caps allocation, enforces SL)
 7. Executes approved trades (market or limit orders)
