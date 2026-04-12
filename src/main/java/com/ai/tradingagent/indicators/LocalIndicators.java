@@ -1,10 +1,13 @@
 package com.ai.tradingagent.indicators;
 
+import org.springframework.stereotype.Service;
+
 import java.util.*;
 
 /**
  * Local technical indicator computation from OHLCV candle data.
  */
+@Service
 public class LocalIndicators {
 
     private static List<Double> closes(List<Map<String, Object>> candles) {

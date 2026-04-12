@@ -1,28 +1,33 @@
 package com.ai.tradingagent.risk;
 
+import com.ai.tradingagent.config.ConfigLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.PostConstruct;
 
 /**
  * Enforces risk limits on every trade before execution.
  */
+@Service
 public class RiskManager {
     private static final Logger logger = LoggerFactory.getLogger(RiskManager.class);
 
-    private final double maxPositionPct;
-    private final double maxLossPerPositionPct;
-    private final double maxLeverage;
-    private final double maxTotalExposurePct;
-    private final double dailyLossCircuitBreakerPct;
-    private final double mandatorySlPct;
-    private final int maxConcurrentPositions;
-    private final double minBalanceReservePct;
+    private double maxPositionPct;
+    private double maxLossPerPositionPct;
+    private double maxLeverage;
+    private double maxTotalExposurePct;
+    private double dailyLossCircuitBreakerPct;
+    private double mandatorySlPct;
+    private int maxConcurrentPositions;
+    private double minBalanceReservePct;
 
     // Daily tracking
     private Double dailyHighValue = null;
@@ -30,7 +35,12 @@ public class RiskManager {
     private boolean circuitBreakerActive = false;
     private LocalDate circuitBreakerDate = null;
 
-    public RiskManager(Map<String, Object> config) {
+    @Autowired
+    ConfigLoader configLoader;
+
+    @PostConstruct
+    private void initialize() {
+        Map<String, Object> config = configLoader.getConfig();
         this.maxPositionPct = Double.parseDouble((String) config.get("maxPositionPct"));
         this.maxLossPerPositionPct = Double.parseDouble((String) config.get("maxLossPerPositionPct"));
         this.maxLeverage = Double.parseDouble((String) config.get("maxLeverage"));

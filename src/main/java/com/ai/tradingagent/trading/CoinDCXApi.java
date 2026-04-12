@@ -1,12 +1,16 @@
 package com.ai.tradingagent.trading;
 
+import com.ai.tradingagent.config.ConfigLoader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -16,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * High-level CoinDCX exchange client with async retry helpers.
  */
+@Service
 public class CoinDCXApi {
     private static final Logger logger = LoggerFactory.getLogger(CoinDCXApi.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -23,12 +28,18 @@ public class CoinDCXApi {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build();
+    private static final String PUBLIC_BASE_URL = "https://public.coindcx.com";
 
-    private final String baseUrl;
-    private final String apiKey;
-    private final String apiSecret;
+    private String baseUrl;
+    private String apiKey;
+    private String apiSecret;
 
-    public CoinDCXApi(Map<String, Object> config) {
+    @Autowired
+    ConfigLoader configLoader;
+
+    @PostConstruct
+    private void initialize(){
+        Map<String, Object> config = configLoader.getConfig();
         this.apiKey = (String) config.get("coindcxApiKey");
         this.apiSecret = (String) config.get("coindcxApiSecret");
         String baseUrl1 = (String) config.get("coindcxBaseUrl");
@@ -65,7 +76,6 @@ public class CoinDCXApi {
                         .url(baseUrl + endpoint)
                         .addHeader("X-AUTH-APIKEY", apiKey)
                         .addHeader("X-AUTH-SIGNATURE", signature)
-                        //.addHeader("X-DC-TIMESTAMP", String.valueOf(timestamp))
                         //.addHeader("Content-Type", "application/json")
                         .post(requestBody)
                         .build();
@@ -86,7 +96,7 @@ public class CoinDCXApi {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Request request = new Request.Builder()
-                        .url("https://public.coindcx.com" + endpoint)
+                        .url(PUBLIC_BASE_URL + endpoint)
                         .get()
                         .build();
 
@@ -112,9 +122,10 @@ public class CoinDCXApi {
         Map<String, Object> payload = Map.of(
                 "side", "buy",
                 "order_type", "limit_order",
-                "market", asset + "_USDT", // Assuming INR pair, adjust as needed
+                "market", asset + "_USDT",
                 "price_per_unit", 0.0, // Market order, but CoinDCX uses limit
-                "total_quantity", amount
+                "total_quantity", amount,
+                "timestamp", System.currentTimeMillis()
         );
         return postPrivate("/exchange/v1/orders/create", payload).thenApply(response -> Map.of("status", "ok"));
     }
@@ -124,9 +135,10 @@ public class CoinDCXApi {
         Map<String, Object> payload = Map.of(
                 "side", "sell",
                 "order_type", "limit_order",
-                "market", asset + "INR",
+                "market", asset + "_USDT",
                 "price_per_unit", 0.0,
-                "total_quantity", amount
+                "total_quantity", amount,
+                "timestamp", System.currentTimeMillis()
         );
         return postPrivate("/exchange/v1/orders/create", payload).thenApply(response -> Map.of("status", "ok"));
     }
@@ -137,16 +149,18 @@ public class CoinDCXApi {
             try {
                 List<Map<String, Object>> balances = objectMapper.readValue(response, List.class);
                 double totalBalance = 0.0;
+                double balanceINR = 0.0;
                 for (Map<String, Object> bal : balances) {
                     String currency = (String) bal.get("currency");
                     double balance = (Double) bal.get("balance");
                     double lockedBalance = (Double) bal.get("locked_balance");
                     if ("INR".equals(currency)) {
-                        totalBalance = balance;
+                        balanceINR = balance;
                     }
+                    totalBalance = totalBalance + balance;
                     // For other currencies, could add to positions if needed
                 }
-                return Map.of("balance", totalBalance, "total_value", totalBalance, "positions", new ArrayList<>());
+                return Map.of("balance", balanceINR, "total_value", totalBalance, "positions", new ArrayList<>());
             } catch (Exception e) {
                 logger.error("Error parsing balances", e);
                 return Map.of("balance", 0.0, "total_value", 0.0, "positions", new ArrayList<>());

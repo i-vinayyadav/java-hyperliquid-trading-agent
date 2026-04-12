@@ -1,5 +1,6 @@
 package com.ai.tradingagent.agent;
 
+import com.ai.tradingagent.config.ConfigLoader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ai.tradingagent.trading.CoinDCXApi;
 import com.google.genai.Client;
@@ -10,14 +11,18 @@ import com.google.genai.types.ToolConfig;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct;
 
 /**
  * Decision-making agent that orchestrates LLM prompts and indicator lookups.
  */
+@Service
 public class TradingAgent {
     private static final Logger logger = LoggerFactory.getLogger(TradingAgent.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -26,12 +31,17 @@ public class TradingAgent {
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    private final String model;
-    private final String apiKey;
-    private final int maxTokens;
-    private final boolean enableToolCalling;
+    private String model;
+    private String apiKey;
+    private int maxTokens;
+    private boolean enableToolCalling;
 
-    public TradingAgent(CoinDCXApi hyperliquid, Map<String, Object> config) {
+    @Autowired
+    ConfigLoader configLoader;
+
+    @PostConstruct
+    private void initialize() {
+        Map<String, Object> config = configLoader.getConfig();
         this.model = (String) config.get("llmModel");
         this.apiKey = (String) config.get("googleApiKey");
         this.maxTokens = (Integer) config.get("maxTokens");
