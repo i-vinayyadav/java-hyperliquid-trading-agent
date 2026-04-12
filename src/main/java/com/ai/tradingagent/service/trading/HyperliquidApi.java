@@ -1,4 +1,4 @@
-package com.ai.tradingagent.trading;
+package com.ai.tradingagent.service.trading;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;

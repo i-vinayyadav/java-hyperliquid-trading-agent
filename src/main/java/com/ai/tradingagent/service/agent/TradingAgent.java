@@ -1,12 +1,10 @@
-package com.ai.tradingagent.agent;
+package com.ai.tradingagent.service.agent;
 
 import com.ai.tradingagent.config.ConfigLoader;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ai.tradingagent.trading.CoinDCXApi;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
-import com.google.genai.types.GenerationConfig;
 import com.google.genai.types.ToolConfig;
 import okhttp3.*;
 import org.slf4j.Logger;

@@ -80,22 +80,23 @@ The agent wallet signs trades on behalf of your main wallet. It cannot withdraw 
 
 ```
 src/java/
-  Main.java                     # Main Spring Boot Class
-  agent/
-    TradingAgent.java           # Claude API integration, tool calling
+  Main.java                         # Main Spring Boot Class
   config/
-    ConfigLoader.java           # Environment config with defaults
-  indicators/
-    LocalIndicators.java        # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
-  risk/
-    RiskManager.java            # Safety guards (position limits, loss protection)
+    ConfigLoader.java               # Environment config with defaults
   schedualr/
-    Schedular.java              # Entry point, trading loop, API server
-  trading/
-    CoinDCXApi.java             # Order execution, candles, state queries
-    HyperliquidApi.java         # Order execution, candles, state queries
+    Schedular.java                  # Entry point, trading loop, API server
+  service/
+      agent/
+        TradingAgent.java           # Claude API integration, tool calling
+      indicators/
+        LocalIndicators.java        # EMA, RSI, MACD, ATR, BBands, ADX, OBV, VWAP
+      risk/
+        RiskManager.java            # Safety guards (position limits, loss protection) 
+      trading/
+        CoinDCXApi.java             # Order execution, candles, state queries
+        HyperliquidApi.java         # Order execution, candles, state queries
   utils/
-    Formatting.java             # Number formatting, JSON serialization helpers
+    Formatting.java                 # Number formatting, JSON serialization helpers
 ```
 
 ## How It Works

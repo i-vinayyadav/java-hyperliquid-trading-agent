@@ -1,10 +1,10 @@
 package com.ai.tradingagent.schedular;
 
-import com.ai.tradingagent.agent.TradingAgent;
+import com.ai.tradingagent.service.agent.TradingAgent;
 import com.ai.tradingagent.config.ConfigLoader;
-import com.ai.tradingagent.indicators.LocalIndicators;
-import com.ai.tradingagent.risk.RiskManager;
-import com.ai.tradingagent.trading.CoinDCXApi;
+import com.ai.tradingagent.service.indicators.LocalIndicators;
+import com.ai.tradingagent.service.risk.RiskManager;
+import com.ai.tradingagent.service.trading.CoinDCXApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+/**
+ * Entry-point script that wires together the trading agent, data feeds, and API.
+ */
 @Component
 public class Schedular {
     private static final Logger logger = LoggerFactory.getLogger(Schedular.class);
@@ -29,8 +32,8 @@ public class Schedular {
     @Autowired
     private RiskManager riskManager;
 
-    @Autowired
-    private LocalIndicators localIndicators;
+//    @Autowired
+//    private LocalIndicators localIndicators;
 
     @Autowired
     CoinDCXApi coinDCXApi;
@@ -64,8 +67,10 @@ public class Schedular {
         }
     }
 
+    //Main trading loop that gathers data, calls the agent, and executes trades.
     @Scheduled(fixedDelay = 300000) // 5 minutes
     public void runLoop() {
+        logger.info("Starting trading agent for assets: {} at interval: {}", assets.toString(), interval);
         invocationCount++;
         double minutesSinceStart = Duration.between(startTime, LocalDateTime.now(ZoneOffset.UTC)).toMinutes();
 

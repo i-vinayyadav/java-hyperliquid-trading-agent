@@ -1,4 +1,4 @@
-package com.ai.tradingagent.risk;
+package com.ai.tradingagent.service.risk;
 
 import com.ai.tradingagent.config.ConfigLoader;
 import org.slf4j.Logger;
