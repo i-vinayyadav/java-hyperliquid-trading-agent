@@ -48,9 +48,10 @@ public class Schedular {
     private Deque<String> recentEvents = new LinkedList<>();
     private List<String> assets;
     private String interval;
+    private Double initialAccountValue = null;  // Tracks the initial account value, null until set
 
     @PostConstruct
-    private void init(){
+    private void init() {
         Map<String, Object> config = configLoader.getConfig();
         this.startTime = LocalDateTime.now(ZoneOffset.UTC);
         this.recentEvents = new LinkedList<>();
@@ -78,16 +79,49 @@ public class Schedular {
         try {
             // Gather data
             Map<String, Object> state = coinDCXApi.getUserState().join();
-            double totalValue = (Double) state.getOrDefault("total_value", 0.0);
-            double accountValue = totalValue;
+            double accountValue = (Double) state.getOrDefault("total_value", 0.0);
+            if (initialAccountValue == null)
+                initialAccountValue = accountValue;
+            double totalReturnPct = (initialAccountValue != null && initialAccountValue != 0.0)
+                    ? ((accountValue - initialAccountValue) / initialAccountValue * 100.0)
+                    : 0.0;
             double balance = (Double) state.getOrDefault("balance", 0.0);
             List<Map<String, Object>> positions = (List<Map<String, Object>>) state.get("positions");
+
+            Map<String, Object> dashboard = Map.of(
+                    "total_return_pct", totalReturnPct,
+                    "balance", balance,
+                    "account_value", accountValue,
+                    "positions", positions);
+            /*To Do
+                "total_return_pct": round(total_return_pct, 2),
+                "balance": round_or_none(state['balance'], 2),
+                "account_value": round_or_none(account_value, 2),
+                "sharpe_ratio": round_or_none(sharpe, 3),
+                "positions": positions,
+                "active_trades": [
+                    {
+                        "asset": tr.get('asset'),
+                        "is_long": tr.get('is_long'),
+                        "amount": round_or_none(tr.get('amount'), 6),
+                        "entry_price": round_or_none(tr.get('entry_price'), 2),
+                        "tp_oid": tr.get('tp_oid'),
+                        "sl_oid": tr.get('sl_oid'),
+                        "exit_plan": tr.get('exit_plan'),
+                        "opened_at": tr.get('opened_at')
+                    }
+                    for tr in active_trades
+                ],
+                "open_orders": open_orders_struct,
+                "recent_diary": recent_diary,
+                "recent_fills": recent_fills_struct,
+            */
 
             // Market data
             List<Map<String, Object>> marketSections = new ArrayList<>();
             Map<String, Double> assetPrices = new HashMap<>();
             for (String asset : assets) {
-                double currentPrice = (Double) coinDCXApi.getCurrentPrice(asset).join();
+                double currentPrice = coinDCXApi.getCurrentPrice(asset);
                 assetPrices.put(asset, currentPrice);
                 List<Map<String, Object>> candles5m = coinDCXApi.getCandles(asset, "5m", 100).join();
                 List<Map<String, Object>> candles4h = coinDCXApi.getCandles(asset, "4h", 100).join();
@@ -116,10 +150,7 @@ public class Schedular {
                             "minutes_since_start", minutesSinceStart,
                             "current_time", System.currentTimeMillis(),
                             "invocation_count", invocationCount),
-                    "account", Map.of(
-                            "total_return_pct", 0.0,
-                            "balance", balance,
-                            "positions", positions),
+                    "account", dashboard,
                     "risk_limits", riskManager.getRiskSummary(),
                     "market_data", marketSections,
                     "instructions", Map.of(
@@ -140,16 +171,30 @@ public class Schedular {
                 //--- RISK: Validate trade before execution ---
                 RiskManager.RiskValidationResult riskValidationResult = riskManager.validateTrade(output, state, balance);
                 if (!riskValidationResult.allowed) {
-                    System.out.println("Risk Validation Failed");
-                    logger.info("Risk Validation Failed: " + riskValidationResult.reason);
+                    logger.info("Risk Validation Failed: {}", riskValidationResult.reason);
                     continue;
                 }
+                String orderType = (String) output.get("order_type");
                 if ("buy".equals(action)) {
-                    double alloc = (Double) output.get("allocation_usd");
-                    coinDCXApi.placeBuyOrder(asset, alloc / currentPrice, 0.01).join();
+                    double alloc = (Double) output.get("allocation_inr");
+                    logger.info("Going to place buy order for order type: {}, asset: {}, allocation: {} and current price: {}",
+                            orderType, asset, alloc, currentPrice);
+                    /*if("market".equals(orderType)) {
+                        coinDCXApi.placeBuyOrder(asset, alloc / currentPrice, 0.01).join();
+                    }
+                    else if ("limit".equals(orderType)) {
+                        coinDCXApi.placeLimitBuyOrder(asset, alloc / currentPrice, 0.01).join();
+                    }*/
                 } else if ("sell".equals(action)) {
-                    double alloc = (Double) output.get("allocation_usd");
-                    coinDCXApi.placeSellOrder(asset, alloc / currentPrice, 0.01).join();
+                    double alloc = (Double) output.get("allocation_inr");
+                    logger.info("Going to place sell order for order type: {}, asset: {}, allocation: {} and current price: {}",
+                            orderType, asset, alloc, currentPrice);
+                    /*if("market".equals(orderType)) {
+                        coinDCXApi.placeSellOrder(asset, alloc / currentPrice, 0.01).join();
+                    }
+                    else if ("limit".equals(orderType)) {
+                        coinDCXApi.placeLimitSellOrder(asset, alloc / currentPrice, 0.01).join();
+                    }*/
                 }
             }
 

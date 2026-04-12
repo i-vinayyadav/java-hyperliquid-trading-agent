@@ -3,7 +3,7 @@
 This document outlines the end-to-end flow of the trading agent at a conceptual level. It focuses on subsystems, data flows, and guardrails rather than specific functions.
 
 ### Subsystems
-- Config/Env: Centralized runtime settings from `.env` (keys, model, assets, interval).
+- Config/Env: Centralized runtime settings from `application.properties` (keys, model, assets, interval).
 - Agent Runtime Loop: Schedules periodic decisions per `--interval` and coordinates all subsystems.
 - Context Builder: Prepares the prompt context with authoritative exchange state, indicators, recent fills, active orders, local diary, and sampled perp mid prices.
 - Decision Engine:

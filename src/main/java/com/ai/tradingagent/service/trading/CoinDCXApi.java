@@ -92,6 +92,26 @@ public class CoinDCXApi {
         });
     }
 
+    private CompletableFuture<String> getPrivate(String endpoint, Map<String, Object> payload) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Request request = new Request.Builder()
+                        .url(baseUrl + endpoint)
+                        .get()
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (!response.isSuccessful()) {
+                        throw new IOException("HTTP error: " + response.code());
+                    }
+                    return response.body().string();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     private CompletableFuture<String> getPublic(String endpoint) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -121,8 +141,21 @@ public class CoinDCXApi {
         amount = roundSize(asset, amount);
         Map<String, Object> payload = Map.of(
                 "side", "buy",
+                "order_type", "market",
+                "market", asset + "_INR",
+                "price_per_unit", 0.0, // Market order, but CoinDCX uses limit
+                "total_quantity", amount,
+                "timestamp", System.currentTimeMillis()
+        );
+        return postPrivate("/exchange/v1/orders/create", payload).thenApply(response -> Map.of("status", "ok"));
+    }
+
+    public CompletableFuture<Map<String, Object>> placeLimitBuyOrder(String asset, double amount, double slippage) {
+        amount = roundSize(asset, amount);
+        Map<String, Object> payload = Map.of(
+                "side", "buy",
                 "order_type", "limit_order",
-                "market", asset + "_USDT",
+                "market", asset + "_INR",
                 "price_per_unit", 0.0, // Market order, but CoinDCX uses limit
                 "total_quantity", amount,
                 "timestamp", System.currentTimeMillis()
@@ -134,8 +167,21 @@ public class CoinDCXApi {
         amount = roundSize(asset, amount);
         Map<String, Object> payload = Map.of(
                 "side", "sell",
+                "order_type", "market",
+                "market", asset + "_INR",
+                "price_per_unit", 0.0,
+                "total_quantity", amount,
+                "timestamp", System.currentTimeMillis()
+        );
+        return postPrivate("/exchange/v1/orders/create", payload).thenApply(response -> Map.of("status", "ok"));
+    }
+
+    public CompletableFuture<Map<String, Object>> placeLimitSellOrder(String asset, double amount, double slippage) {
+        amount = roundSize(asset, amount);
+        Map<String, Object> payload = Map.of(
+                "side", "sell",
                 "order_type", "limit_order",
-                "market", asset + "_USDT",
+                "market", asset + "_INR",
                 "price_per_unit", 0.0,
                 "total_quantity", amount,
                 "timestamp", System.currentTimeMillis()
@@ -152,12 +198,14 @@ public class CoinDCXApi {
                 double balanceINR = 0.0;
                 for (Map<String, Object> bal : balances) {
                     String currency = (String) bal.get("currency");
-                    double balance = (Double) bal.get("balance");
+                    double qty = (Double) bal.get("balance");
                     double lockedBalance = (Double) bal.get("locked_balance");
                     if ("INR".equals(currency)) {
-                        balanceINR = balance;
+                        balanceINR = qty;
+                    } else {
+                        double currentPrice = getCurrentPrice(currency);
+                        totalBalance = totalBalance + (qty * currentPrice);
                     }
-                    totalBalance = totalBalance + balance;
                     // For other currencies, could add to positions if needed
                 }
                 return Map.of("balance", balanceINR, "total_value", totalBalance, "positions", new ArrayList<>());
@@ -168,26 +216,18 @@ public class CoinDCXApi {
         });
     }
 
-    public CompletableFuture<Object> getCurrentPrice(String asset) {
-        String market = asset + "_USDT";
-        String endpoint = "/market_data/trade_history?pair=B-" + market;
-        return getPublic(endpoint).thenApply(response -> {
-            double price = 0.0;
-            try {
-                List<Map<String, Object>> trades = objectMapper.readValue(response, List.class);
-                for (Map<String, Object> trade : trades) {
-                    price = (Double) trade.get("p");
-                }
-            } catch (Exception e) {
-                logger.error("Error parsing balances", e);
-            }
-            return price;
-        });
+    public double getCurrentPrice(String asset) {
+        List<Map<String, Object>> candles = getCandles(asset, "1m", 1).join();
+        Object object = candles.get(0).get("close");
+        if (object instanceof Number) {
+            return ((Number) object).doubleValue();
+        }
+        return 0.0;
     }
 
     public CompletableFuture<List<Map<String, Object>>> getCandles(String asset, String interval, int count) {
-        String market = asset + "_USDT";
-        String endpoint = "/market_data/candles?pair=B-" + market + "&interval=" + interval + "&limit=" + count;
+        String market = asset + "_INR";
+        String endpoint = "/market_data/candles?pair=I-" + market + "&interval=" + interval + "&limit=" + count;
         return getPublic(endpoint).thenApply(response -> {
             List<Map<String, Object>> trades = null;
             try {
@@ -199,5 +239,21 @@ public class CoinDCXApi {
         });
     }
 
+    public CompletableFuture<Object> getConvertedPrice() {
+        long timestamp = System.currentTimeMillis();
+        String endpoint = "/exchange/v1/derivatives/futures/data/conversions";
+        return getPrivate(endpoint, null).thenApply(response -> {
+            double inrPrice = 0.0;
+            try {
+                List<Map<String, Object>> trades = objectMapper.readValue(response, List.class);
+                for (Map<String, Object> trade : trades) {
+                    inrPrice = (Double) trade.get("conversion_price");
+                }
+            } catch (Exception e) {
+                logger.error("Error parsing balances", e);
+            }
+            return inrPrice;
+        });
+    }
     // Other methods can be implemented similarly
 }

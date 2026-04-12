@@ -89,7 +89,7 @@ public class TradingAgent {
         "Decision discipline (per asset)\n" +
         "- Choose one: buy / sell / hold.\n" +
         "- Proactively harvest profits when price action presents a clear, high-quality opportunity that aligns with your thesis.\n" +
-        "- You control allocation_usd (but the system will cap it — see risk limits below).\n" +
+        "- You control allocation_inr (but the system will cap it — see risk limits below).\n" +
         "- Order type: set order_type to \"market\" for immediate execution, or \"limit\" for resting orders.\n" +
         "  • For limit orders, you MUST set limit_price. Use limit orders when you want better entry prices (e.g., buying a dip, selling a bounce).\n" +
         "  • For market orders, limit_price should be null.\n" +
@@ -102,10 +102,10 @@ public class TradingAgent {
         "Leverage policy (perpetual futures)\n" +
         "- You can use leverage, but the system enforces a hard cap. Stay within the limits.\n" +
         "- In high volatility (elevated ATR) or during funding spikes, reduce or avoid leverage.\n" +
-        "- Treat allocation_usd as notional exposure; keep it consistent with safe leverage and available margin.\n\n" +
+        "- Treat allocation_inr as notional exposure; keep it consistent with safe leverage and available margin.\n\n" +
         "Tool usage\n" +
         "- Use the fetch_indicator tool whenever an additional datapoint could sharpen your thesis; parameters: indicator (ema/sma/rsi/macd/bbands/atr/adx/obv/vwap/stoch_rsi/all), asset (e.g. \"BTC\", \"OIL\", \"GOLD\"), interval (\"5m\"/\"4h\"), optional period.\n" +
-        "- Indicators are computed locally from Hyperliquid candle data — works for ALL perp markets (crypto, commodities, indices).\n" +
+        "- Indicators are computed locally from CoinDCX candle data — works for ALL perp markets (crypto, commodities, indices).\n" +
         "- Incorporate tool findings into your reasoning, but NEVER paste raw tool responses into the final JSON — summarize the insight instead.\n" +
         "- Use tools to upgrade your analysis; lack of confidence is a cue to query them before deciding.\n\n" +
         "Reasoning recipe (first principles)\n" +
@@ -115,7 +115,7 @@ public class TradingAgent {
         "- Output ONLY a strict JSON object (no markdown, no code fences) with exactly two properties:\n" +
         "  • \"reasoning\": long-form string capturing detailed, step-by-step analysis.\n" +
         "  • \"trade_decisions\": array ordered to match the provided assets list.\n" +
-        "- Each item inside trade_decisions must contain the keys: asset, action, allocation_usd, order_type, limit_price, tp_price, sl_price, exit_plan, rationale.\n" +
+        "- Each item inside trade_decisions must contain the keys: asset, action, allocation_inr, order_type, limit_price, tp_price, sl_price, exit_plan, rationale.\n" +
         "  • order_type: \"market\" (default) or \"limit\"\n" +
         "  • limit_price: required if order_type is \"limit\", null otherwise\n" +
         "- Do not emit Markdown or any extra properties.\n";
