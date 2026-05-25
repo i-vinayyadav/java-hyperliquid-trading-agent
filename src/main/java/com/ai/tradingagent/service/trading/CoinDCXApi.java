@@ -142,8 +142,7 @@ public class CoinDCXApi {
         Map<String, Object> payload = Map.of(
                 "side", "buy",
                 "order_type", "market",
-                "market", asset + "_INR",
-                "price_per_unit", 0.0, // Market order, but CoinDCX uses limit
+                "market", asset + "INR",
                 "total_quantity", amount,
                 "timestamp", System.currentTimeMillis()
         );
@@ -155,8 +154,8 @@ public class CoinDCXApi {
         Map<String, Object> payload = Map.of(
                 "side", "buy",
                 "order_type", "limit_order",
-                "market", asset + "_INR",
-                "price_per_unit", 0.0, // Market order, but CoinDCX uses limit
+                "market", asset + "INR",
+                "price_per_unit", 0.0,
                 "total_quantity", amount,
                 "timestamp", System.currentTimeMillis()
         );
@@ -168,8 +167,7 @@ public class CoinDCXApi {
         Map<String, Object> payload = Map.of(
                 "side", "sell",
                 "order_type", "market",
-                "market", asset + "_INR",
-                "price_per_unit", 0.0,
+                "market", asset + "INR",
                 "total_quantity", amount,
                 "timestamp", System.currentTimeMillis()
         );
@@ -181,7 +179,7 @@ public class CoinDCXApi {
         Map<String, Object> payload = Map.of(
                 "side", "sell",
                 "order_type", "limit_order",
-                "market", asset + "_INR",
+                "market", asset + "INR",
                 "price_per_unit", 0.0,
                 "total_quantity", amount,
                 "timestamp", System.currentTimeMillis()
